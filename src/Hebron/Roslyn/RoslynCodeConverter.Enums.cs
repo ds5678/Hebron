@@ -72,8 +72,9 @@ namespace Hebron.Roslyn
 						EnumMemberDeclarationSyntax enumMemberDeclaration = EnumMemberDeclaration(child.Spelling);
 						if (child.CursorChildren.Count > 0)
 						{
-							var value = int.Parse(child.CursorChildren[0].GetLiteralString());
-							enumMemberDeclaration = enumMemberDeclaration.WithEqualsValue(EqualsValueClause(IdentifierName(value.ToString())));
+							string literal = child.CursorChildren[0].GetLiteralString();
+							//var value = int.Parse(literal);
+							enumMemberDeclaration = enumMemberDeclaration.WithEqualsValue(EqualsValueClause(IdentifierName(literal)));
 						}
 
 						expr = expr.AddMembers(enumMemberDeclaration);

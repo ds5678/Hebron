@@ -273,6 +273,8 @@ namespace Hebron
 					return clangsharp.Cursor_getStringLiteralValue(cursor).ToString();
 				case CXCursorKind.CXCursor_CXXBoolLiteralExpr:
 					return clangsharp.Cursor_getBoolLiteralValue(cursor).ToString();
+				case CXCursorKind.CXCursor_FirstExpr:
+					return cursor.GetChild(0).GetLiteralString();
 			}
 
 			return string.Empty;

@@ -12,24 +12,20 @@ namespace Hebron
         {
             var parameters = new RoslynConversionParameters
             {
-                Defines = new[]
+                Defines = new string[]
                 {
-                    "STBI_NO_SIMD",
-                    "STBI_NO_PIC",
-                    "STBI_NO_PNM",
-                    "STBI_NO_STDIO",
-                    "STB_IMAGE_IMPLEMENTATION",
+                    //"CRNLIB_SUPPORT_ATI_COMPRESS",
+                    //"CRNLIB_SUPPORT_SQUISH",
                 },
-                InputPath = @"D:\Projects\StbSharp\stb\stb_image.h",
-                // InputPath = @"D:\Projects\sqlite-amalgamation-3370000\sqlite3.c",
-                SkipGlobalVariables = new[]
+                InputPath = @"path\repos\Texture2DDecoder\Texture2DDecoderNative\crunch\crnlib.h",
+                SkipGlobalVariables = new string[]
 				{
-                    "stbi__g_failure_reason"
+                    //"stbi__g_failure_reason"
                 },
-                SkipFunctions = new[]
+                SkipFunctions = new string[]
 				{
-                    "stbi__err",
-                    "stbi_failure_reason"
+                    //"stbi__err",
+                    //"stbi_failure_reason"
                 },
             };
 
@@ -39,7 +35,7 @@ namespace Hebron
 
             var result = RoslynCodeConverter.Convert(parameters);
 
-            var cls = ClassDeclaration("StbImage")
+            var cls = ClassDeclaration("Crunch")
                 .AddModifiers(Token(SyntaxKind.UnsafeKeyword), Token(SyntaxKind.PartialKeyword));
 
             foreach (var pair in result.NamedEnums)
@@ -72,7 +68,7 @@ namespace Hebron
                 cls = cls.AddMembers(pair.Value);
             }
 
-            var ns = NamespaceDeclaration(ParseName("StbImageSharp")).AddMembers(cls);
+            var ns = NamespaceDeclaration(ParseName("CrunchSharp")).AddMembers(cls);
 
             string s;
             using (var sw = new StringWriter())
@@ -82,11 +78,9 @@ namespace Hebron
                 s = sw.ToString();
             }
 
-            s = s.Replace("stbi__jpeg j = (stbi__jpeg)(stbi__malloc((ulong)(sizeof(stbi__jpeg))))",
-                "var j = new stbi__jpeg()");
+            //s = s.Replace("stbi__jpeg j = (stbi__jpeg)(stbi__malloc((ulong)(sizeof(stbi__jpeg))))", "var j = new stbi__jpeg()");
 
-            File.WriteAllText(@"D:\Projects\Chaos\RoslynTest\RoslynTest\StbImage.Generated.cs", s);
-            // File.WriteAllText(@"D:\Projects\Chaos\RoslynTest\RoslynTest\Sqlite.Generated.cs", s);
+            File.WriteAllText(@"path\repos\TextureDecoder\AssetRipper.TextureDecoder\CrunchSharp\Crunch.Generated.cs", s);
         }
     }
 }
