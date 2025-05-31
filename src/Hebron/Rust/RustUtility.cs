@@ -5,14 +5,9 @@ using System.Text.RegularExpressions;
 
 namespace Hebron.Rust
 {
-	internal static class RustUtility
+	internal static partial class RustUtility
 	{
-		private static readonly HashSet<string> _specialWords = new HashSet<string>(new[]
-		{
-			"type",
-			"in",
-			"final",
-		});
+		private static readonly HashSet<string> _specialWords = ["type", "in", "final"];
 
 		public static string FixSpecialWords(this string name)
 		{
@@ -40,7 +35,7 @@ namespace Hebron.Rust
 			var lastCast = string.Empty;
 			var dexpr = expr.Deparentize();
 
-			var m = Regex.Match(dexpr, @"(.+)\s*as\s*(\w+)");
+			var m = CastRegex().Match(dexpr);
 			if (m.Success)
 			{
 				lastCast = m.Groups[2].Value;
@@ -54,7 +49,7 @@ namespace Hebron.Rust
 			return (expr.Parentize() + " as " + type).Parentize();
 		}
 
-		internal static string GetExpression(this CursorProcessResult cursorProcessResult)
+		internal static string GetExpression(this CursorProcessResult? cursorProcessResult)
 		{
 			return cursorProcessResult != null ? cursorProcessResult.Expression : string.Empty;
 		}
@@ -71,8 +66,7 @@ namespace Hebron.Rust
 
 		public static string GetDefaltValue(this BaseTypeDescriptor type)
 		{
-			var asPrimitive = type as PrimitiveTypeInfo;
-			if (asPrimitive != null)
+			if (type is PrimitiveTypeInfo asPrimitive)
 			{
 				switch (asPrimitive.PrimitiveType)
 				{
@@ -101,13 +95,12 @@ namespace Hebron.Rust
 				}
 			}
 
-			var asStruct = type as StructTypeInfo;
-			if (asStruct != null)
+			if (type is StructTypeInfo asStruct)
 			{
 				return asStruct.StructName + "::default()";
 			}
 
-			throw new Exception(string.Format("Unable to create default value for type {0}", type.ToString()));
+			throw new Exception($"Unable to create default value for type {type.ToString()}");
 		}
 
 		public static string GetDefaltValue(this TypeInfo type)
@@ -121,9 +114,9 @@ namespace Hebron.Rust
 					sb.Append(GetDefaltValue(type.TypeDescriptor));
 					for (var i = 0; i < type.ConstantArraySizes.Length; ++i)
 					{
-						sb.Append(";");
+						sb.Append(';');
 						sb.Append(type.ConstantArraySizes[i]);
-						sb.Append("]");
+						sb.Append(']');
 					}
 
 					return sb.ToString();
@@ -145,35 +138,24 @@ namespace Hebron.Rust
 
 		public static string ToRustTypeName(this string type)
 		{
-			switch(type)
+			return type switch
 			{
-				case "bool":
-					return "bool";
-				case "unsigned char":
-					return "u8";
-				case "char":
-					return "i8";
-				case "unsigned short":
-					return "u16";
-				case "short":
-					return "i16";
-				case "float":
-					return "f32";
-				case "double":
-					return "f64";
-				case "int":
-				case "long":
-					return "i32";
-				case "unsigned int":
-				case "unsigned long":
-					return "u32";
-				case "long long":
-					return "i64";
-				case "unsigned long long":
-					return "u64";
-			}
-
-			return type;
+				"bool" => "bool",
+				"unsigned char" => "u8",
+				"char" => "i8",
+				"unsigned short" => "u16",
+				"short" => "i16",
+				"float" => "f32",
+				"double" => "f64",
+				"int" or "long" => "i32",
+				"unsigned int" or "unsigned long" => "u32",
+				"long long" => "i64",
+				"unsigned long long" => "u64",
+				_ => type,
+			};
 		}
+
+		[GeneratedRegex(@"(.+)\s*as\s*(\w+)")]
+		private static partial Regex CastRegex();
 	}
 }

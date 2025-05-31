@@ -16,14 +16,13 @@ namespace Hebron.Rust
 			_state = State.GlobalVariables;
 			foreach (var cursor in TranslationUnit.EnumerateCursors())
 			{
-				var varDecl = cursor as VarDecl;
-				if (varDecl == null)
+				if (cursor is not VarDecl)
 				{
 					continue;
 				}
 
 				var name = cursor.Spelling.FixSpecialWords();
-				Logger.Info("Processing global variable {0}", name);
+				Logger.Info($"Processing global variable {name}");
 
 				if (Parameters.SkipGlobalVariables.Contains(name))
 				{

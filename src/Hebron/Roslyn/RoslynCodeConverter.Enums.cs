@@ -1,6 +1,5 @@
 ﻿using ClangSharp;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Globalization;
 using System.Linq;
@@ -31,7 +30,7 @@ namespace Hebron.Roslyn
 				{
 					Logger.Info("Processing unnamed enum");
 
-					int value = 0;
+					var value = 0;
 					foreach (var child in cursor.CursorChildren)
 					{
 						if (child.CursorChildren.Count > 0)
@@ -68,16 +67,16 @@ namespace Hebron.Roslyn
 				}
 				else
 				{
-					Logger.Info("Processing enum {0}", cursor.Spelling);
+					Logger.Info($"Processing enum {cursor.Spelling}");
 
 					var expr = EnumDeclaration(cursor.Spelling).MakePublic();
 
 					foreach (var child in cursor.CursorChildren)
 					{
-						EnumMemberDeclarationSyntax enumMemberDeclaration = EnumMemberDeclaration(child.Spelling);
+						var enumMemberDeclaration = EnumMemberDeclaration(child.Spelling);
 						if (child.CursorChildren.Count > 0)
 						{
-							int value = 0;
+							var value = 0;
 							var str = child.CursorChildren[0].GetLiteralString();
 							if (!string.IsNullOrEmpty(str))
 							{

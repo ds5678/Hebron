@@ -14,24 +14,24 @@ namespace Hebron.Rust
 
 		private class FieldInfo
 		{
-			public string Name;
-			public Type Type;
+			public required string Name;
+			public required Type Type;
 		}
 
 		private class SwitchInfo
 		{
-			public string Expression;
+			public string? Expression;
 			public bool Started;
 			public bool LastCaseHasBreak;
 		}
 
-		private FunctionDecl _functionDecl;
-		private List<FieldInfo> _currentStructInfo;
-		private readonly Dictionary<string, string> _localVariablesMap = new Dictionary<string, string>();
+		private FunctionDecl? _functionDecl;
+		private List<FieldInfo>? _currentStructInfo;
+		private readonly Dictionary<string, string> _localVariablesMap = [];
 		private IndentedStringWriter _writer = new IndentedStringWriter();
 		private readonly Stack<SwitchInfo> _switches = new Stack<SwitchInfo>();
 		private int _hebronTmpIndex = 0;
-		private readonly List<Cursor> _parents = new List<Cursor>();
+		private readonly List<Cursor> _parents = [];
 
 		private void ResetWriter() => _writer = new IndentedStringWriter();
 
@@ -60,7 +60,7 @@ namespace Hebron.Rust
 				_functionDecl = funcDecl;
 
 				var functionName = cursor.Spelling.FixSpecialWords();
-				Logger.Info("Processing function {0}", functionName);
+				Logger.Info($"Processing function {functionName}");
 
 				if (Parameters.SkipFunctions.Contains(functionName))
 				{
@@ -70,7 +70,7 @@ namespace Hebron.Rust
 
 				var name = cursor.Spelling.FixSpecialWords();
 
-				_writer.IndentedWrite("pub unsafe fn " + name + "(");
+				_writer.Write("pub unsafe fn " + name + "(");
 
 				for(var i = 0; i < funcDecl.Parameters.Count; ++i)
 				{
@@ -93,9 +93,9 @@ namespace Hebron.Rust
 					_writer.Write(" -> " + ToRustString(returnTypeInfo));
 				}
 
-				_writer.WriteLine(" {");
+				_writer.WriteLineNoTabs(" {");
 
-				++_writer.IndentLevel;
+				++_writer.Indent;
 
 				foreach (var child in funcDecl.Body.Children)
 				{
@@ -106,11 +106,11 @@ namespace Hebron.Rust
 					}
 
 					var stmt = result.Expression.EnsureStatementFinished();
-					_writer.IndentedWriteLine(stmt);
+					_writer.WriteLine(stmt);
 				}
 
-				--_writer.IndentLevel;
-				_writer.IndentedWriteLine("}");
+				--_writer.Indent;
+				_writer.WriteLine('}');
 
 
 				var funcResult = _writer.ToString();
@@ -160,9 +160,9 @@ namespace Hebron.Rust
 					sb.Append(typeInfo.TypeDescriptor.GetDefaltValue());
 					for (var i = 0; i < typeInfo.ConstantArraySizes.Length; ++i)
 					{
-						sb.Append(";");
+						sb.Append(';');
 						sb.Append(typeInfo.ConstantArraySizes[i]);
-						sb.Append("]");
+						sb.Append(']');
 					}
 
 					right = sb.ToString();
@@ -275,7 +275,7 @@ namespace Hebron.Rust
 			return Process(cursor.CursorChildren[index]);
 		}
 
-		private CursorProcessResult ProcessPossibleChildByIndex(Cursor cursor, int index)
+		private CursorProcessResult? ProcessPossibleChildByIndex(Cursor cursor, int index)
 		{
 			if (cursor.CursorChildren.Count <= index)
 			{
@@ -331,7 +331,7 @@ namespace Hebron.Rust
 						var opCode = info.Handle.UnaryOperatorKind;
 						var expr = ProcessPossibleChildByIndex(info, 0);
 
-						string[] tokens = null;
+						string[]? tokens = null;
 						if (opCode == CXUnaryOperatorKind.CXUnaryOperator_Invalid && expr != null)
 						{
 							tokens = info.Tokenize();
@@ -346,8 +346,7 @@ namespace Hebron.Rust
 							{
 								if (expr.TypeInfo.ConstantArraySizes.Length > 1)
 								{
-									throw new Exception(string.Format("sizeof for arrays with {0} dimensions isn't supported.",
-										expr.TypeInfo.ConstantArraySizes.Length));
+									throw new Exception($"sizeof for arrays with {expr.TypeInfo.ConstantArraySizes.Length} dimensions isn't supported.");
 								}
 
 								if (expr.TypeInfo.ConstantArraySizes.Length == 1)
@@ -364,10 +363,7 @@ namespace Hebron.Rust
 							}
 						}
 
-						if (tokens == null)
-						{
-							tokens = info.Tokenize();
-						}
+						tokens ??= info.Tokenize();
 
 						if (tokens.Length > 2 && tokens[0] == "sizeof")
 						{
@@ -408,9 +404,10 @@ namespace Hebron.Rust
 								var type2 = b.Info.Handle.BinaryOperatorKind;
 								if (type2 == CXBinaryOperatorKind.CXBinaryOperator_Assign)
 								{
-									var lvalues = new List<string>();
-
-									lvalues.Add(a.Expression);
+									var lvalues = new List<string>
+									{
+										a.Expression
+									};
 
 									// // Find right value
 									while (type2 == CXBinaryOperatorKind.CXBinaryOperator_Assign)
@@ -604,7 +601,7 @@ namespace Hebron.Rust
 
 						sb.Append(functionName + "(");
 						sb.Append(string.Join(", ", args));
-						sb.Append(")");
+						sb.Append(')');
 
 						return sb.ToString();
 					}
@@ -667,7 +664,7 @@ namespace Hebron.Rust
 					{
 						var size = info.CursorChildren.Count;
 
-						CursorProcessResult execution = null, start = null, condition = null, it = null;
+						CursorProcessResult? execution = null, start = null, condition = null, it = null;
 						switch (size)
 						{
 							case 1:
@@ -728,7 +725,7 @@ namespace Hebron.Rust
 
 							if (openingBracketIndex != -1)
 							{
-								executionExpr = executionExpr.Substring(0, openingBracketIndex) + itExpr.EnsureStatementFinished() + "}";
+								executionExpr = string.Concat(executionExpr.AsSpan(0, openingBracketIndex), itExpr.EnsureStatementFinished(), "}");
 
 								return startExpr + ";" + Environment.NewLine + "while (" + condExpr + ") " + executionExpr;
 							}
@@ -752,7 +749,7 @@ namespace Hebron.Rust
 
 						var s2 = "if ";
 
-						SwitchInfo switchInfo = _switches.Peek();
+						var switchInfo = _switches.Peek();
 						if (switchInfo.Started)
 						{
 							if (!switchInfo.LastCaseHasBreak)
@@ -786,7 +783,7 @@ namespace Hebron.Rust
 				case CXCursorKind.CXCursor_DefaultStmt:
 					{
 						var s2 = "else { ";
-						SwitchInfo switchInfo = _switches.Peek();
+						var switchInfo = _switches.Peek();
 						if (switchInfo.Started)
 						{
 							if (!switchInfo.LastCaseHasBreak)
@@ -850,8 +847,7 @@ namespace Hebron.Rust
 							var closingBracketIndex = exeuctionExpr.LastIndexOf("}");
 							if (closingBracketIndex != -1)
 							{
-								return "while(true) " + exeuctionExpr.Substring(0, closingBracketIndex) +
-									breakExpr + exeuctionExpr.Substring(closingBracketIndex);
+								return string.Concat("while(true) ", exeuctionExpr.AsSpan(0, closingBracketIndex), breakExpr, exeuctionExpr.AsSpan(closingBracketIndex));
 							}
 						}
 
@@ -977,8 +973,7 @@ namespace Hebron.Rust
 				case CXCursorKind.CXCursor_VarDecl:
 					{
 						var varDecl = (VarDecl)info;
-						string name;
-						var expr = ProcessDeclaration(varDecl, out name);
+						var expr = ProcessDeclaration(varDecl, out var name);
 
 						if (_state == State.Functions &&
 							varDecl.StorageClass == CX_StorageClass.CX_SC_Static)
@@ -1194,7 +1189,7 @@ namespace Hebron.Rust
 			}
 		}
 
-		private Cursor GetParent(int depth)
+		private Cursor? GetParent(int depth)
 		{
 			var index = _parents.Count - depth - 2;
 			if (index < 0 || index >= _parents.Count)
@@ -1219,7 +1214,7 @@ namespace Hebron.Rust
 			};
 		}
 
-		private string ReplaceCommas(CursorProcessResult info)
+		private string ReplaceCommas(CursorProcessResult? info)
 		{
 			var executionExpr = info.GetExpression();
 			if (info != null && info.Info.CursorKind == CXCursorKind.CXCursor_BinaryOperator)

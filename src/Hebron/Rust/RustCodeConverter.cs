@@ -47,8 +47,7 @@ namespace Hebron.Rust
 
 		public string ToRustTypeName(BaseTypeDescriptor type)
 		{
-			var asPrimitiveType = type as PrimitiveTypeInfo;
-			if (asPrimitiveType != null)
+			if (type is PrimitiveTypeInfo asPrimitiveType)
 			{
 				switch (asPrimitiveType.PrimitiveType)
 				{
@@ -79,8 +78,7 @@ namespace Hebron.Rust
 				}
 			}
 
-			var asStructType = type as StructTypeInfo;
-			if (asStructType != null)
+			if (type is StructTypeInfo asStructType)
 			{
 				return asStructType.StructName;
 			}
@@ -104,7 +102,7 @@ namespace Hebron.Rust
 				}
 			}
 			
-			sb.Append(")");
+			sb.Append(')');
 
 			if (!asFunctionPointerType.ReturnType.IsVoid())
 			{
@@ -131,9 +129,9 @@ namespace Hebron.Rust
 				sb.Append(typeName);
 				for (var i = 0; i < type.ConstantArraySizes.Length; ++i)
 				{
-					sb.Append(";");
+					sb.Append(';');
 					sb.Append(type.ConstantArraySizes[type.ConstantArraySizes.Length - i - 1]);
-					sb.Append("]");
+					sb.Append(']');
 				}
 
 				return sb.ToString();

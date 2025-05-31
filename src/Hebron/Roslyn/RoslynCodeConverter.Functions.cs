@@ -23,14 +23,14 @@ namespace Hebron.Roslyn
 
 		private class FieldInfo
 		{
-			public string Name;
-			public Type Type;
+			public required string Name;
+			public required Type Type;
 		}
 
 		private State _state = State.Functions;
-		private FunctionDecl _functionDecl;
-		private List<FieldInfo> _currentStructInfo;
-		private readonly Dictionary<string, string> _localVariablesMap = new Dictionary<string, string>();
+		private FunctionDecl? _functionDecl;
+		private List<FieldInfo>? _currentStructInfo;
+		private readonly Dictionary<string, string> _localVariablesMap = [];
 
 		public void ConvertFunctions()
 		{
@@ -55,7 +55,7 @@ namespace Hebron.Roslyn
 				_functionDecl = funcDecl;
 
 				var functionName = cursor.Spelling.FixSpecialWords();
-				Logger.Info("Processing function {0}", functionName);
+				Logger.Info($"Processing function {functionName}");
 
 				if (Parameters.SkipFunctions.Contains(functionName))
 				{
@@ -137,7 +137,7 @@ namespace Hebron.Roslyn
 						typeInfo.ConstantArraySizes[0] > 1)
 					{
 						var sb = new StringBuilder();
-						sb.Append("{");
+						sb.Append('{');
 
 						var element = rvalue.Expression.Decurlize();
 						for (var i = 0; i < typeInfo.ConstantArraySizes[0]; ++i)
@@ -148,7 +148,7 @@ namespace Hebron.Roslyn
 								sb.Append(", ");
 							}
 						}
-						sb.Append("}");
+						sb.Append('}');
 
 						initListExpr = sb.ToString();
 					}
@@ -343,7 +343,7 @@ namespace Hebron.Roslyn
 			return Process(cursor.CursorChildren[index]);
 		}
 
-		private CursorProcessResult ProcessPossibleChildByIndex(Cursor cursor, int index)
+		private CursorProcessResult? ProcessPossibleChildByIndex(Cursor cursor, int index)
 		{
 			if (cursor.CursorChildren.Count <= index)
 			{
@@ -392,7 +392,7 @@ namespace Hebron.Roslyn
 						var opCode = info.Handle.UnaryOperatorKind;
 						var expr = ProcessPossibleChildByIndex(info, 0);
 
-						string[] tokens = null;
+						string[]? tokens = null;
 						if (opCode == CXUnaryOperatorKind.CXUnaryOperator_Invalid && expr != null)
 						{
 							tokens = info.Tokenize();
@@ -407,8 +407,7 @@ namespace Hebron.Roslyn
 							{
 								if (expr.TypeInfo.ConstantArraySizes.Length > 1)
 								{
-									throw new Exception(string.Format("sizeof for arrays with {0} dimensions isn't supported.", 
-										expr.TypeInfo.ConstantArraySizes.Length));
+									throw new Exception($"sizeof for arrays with {expr.TypeInfo.ConstantArraySizes.Length} dimensions isn't supported.");
 								}
 
 								if (expr.TypeInfo.ConstantArraySizes.Length == 1)
@@ -425,10 +424,7 @@ namespace Hebron.Roslyn
 							}
 						}
 
-						if (tokens == null)
-						{
-							tokens = info.Tokenize();
-						}
+						tokens ??= info.Tokenize();
 
 						return string.Join(string.Empty, tokens);
 					}
@@ -573,7 +569,7 @@ namespace Hebron.Roslyn
 
 						sb.Append(functionName + "(");
 						sb.Append(string.Join(", ", args));
-						sb.Append(")");
+						sb.Append(')');
 
 
 						return sb.ToString();
@@ -633,7 +629,7 @@ namespace Hebron.Roslyn
 					{
 						var size = info.CursorChildren.Count;
 
-						CursorProcessResult execution = null, start = null, condition = null, it = null;
+						CursorProcessResult? execution = null, start = null, condition = null, it = null;
 						switch (size)
 						{
 							case 1:
@@ -821,8 +817,7 @@ namespace Hebron.Roslyn
 				case CXCursorKind.CXCursor_VarDecl:
 					{
 						var varDecl = (VarDecl)info;
-						string name;
-						var expr = ProcessDeclaration(varDecl, out name);
+						var expr = ProcessDeclaration(varDecl, out var name);
 
 						if (_state == State.Functions && 
 							varDecl.StorageClass == CX_StorageClass.CX_SC_Static)
@@ -830,7 +825,7 @@ namespace Hebron.Roslyn
 							_localVariablesMap[varDecl.Spelling.FixSpecialWords()] = name;
 
 							expr = "public static " + expr;
-							Result.GlobalVariables[name] = (FieldDeclarationSyntax)ParseMemberDeclaration(expr);
+							Result.GlobalVariables[name] = (FieldDeclarationSyntax?)ParseMemberDeclaration(expr);
 							return string.Empty;
 						}
 
@@ -1021,7 +1016,7 @@ namespace Hebron.Roslyn
 			};
 		}
 
-		private string ReplaceCommas(CursorProcessResult info)
+		private string ReplaceCommas(CursorProcessResult? info)
 		{
 			var executionExpr = info.GetExpression();
 			if (info != null && info.Info.CursorKind == CXCursorKind.CXCursor_BinaryOperator)

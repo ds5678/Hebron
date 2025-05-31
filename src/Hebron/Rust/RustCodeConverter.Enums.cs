@@ -23,7 +23,7 @@ namespace Hebron.Rust
 					continue;
 				}
 
-				int value = 0;
+				var value = 0;
 				foreach (var child in cursor.CursorChildren)
 				{
 					var name = child.Spelling;

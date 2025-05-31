@@ -16,7 +16,7 @@ namespace Hebron
 	{
 		public ConversionEntities ConversionEntities = ConversionEntities.All;
 
-		public string InputPath { get; set; }
+		public required string InputPath { get; set; }
 		public string[] Defines { get; set; }
 		public string[] AdditionalIncludeDirectories { get; set; }
 
@@ -42,12 +42,12 @@ namespace Hebron
 		
 		public BaseConversionParameters()
 		{
-			AdditionalIncludeDirectories = new string[0];
-			Defines = new string[0];
-			SkipEnums = new string[0];
-			SkipStructs = new string[0];
-			SkipGlobalVariables = new string[0];
-			SkipFunctions = new string[0];
+			AdditionalIncludeDirectories = [];
+			Defines = [];
+			SkipEnums = [];
+			SkipStructs = [];
+			SkipGlobalVariables = [];
+			SkipFunctions = [];
 		}
 	}
 }

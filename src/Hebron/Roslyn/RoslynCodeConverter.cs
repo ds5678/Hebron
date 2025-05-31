@@ -11,13 +11,13 @@ namespace Hebron.Roslyn
 	{
 		private class DelegateInfo
 		{
-			public string Name;
-			public FunctionPointerTypeInfo FunctionInfo;
+			public required string Name;
+			public required FunctionPointerTypeInfo FunctionInfo;
 		}
 
-		private readonly Dictionary<string, DelegateInfo> DelegateMap = new Dictionary<string, DelegateInfo>();
-		private readonly HashSet<string> Classes = new HashSet<string>();
-		private Dictionary<string, Stack<string>> _variables = new Dictionary<string, Stack<string>>();
+		private readonly Dictionary<string, DelegateInfo> DelegateMap = [];
+		private readonly HashSet<string> Classes = [];
+		private Dictionary<string, Stack<string>> _variables = [];
 
 		public TranslationUnit TranslationUnit { get; }
 		public RoslynConversionParameters Parameters { get; }
@@ -56,8 +56,7 @@ namespace Hebron.Roslyn
 
 		public string ToRoslynTypeName(TypeInfo type, bool declareMissingTypes = false)
 		{
-			var asPrimitiveType = type.TypeDescriptor as PrimitiveTypeInfo;
-			if (asPrimitiveType != null)
+			if (type.TypeDescriptor is PrimitiveTypeInfo asPrimitiveType)
 			{
 				switch (asPrimitiveType.PrimitiveType)
 				{
@@ -88,14 +87,12 @@ namespace Hebron.Roslyn
 				}
 			}
 
-			var asEnumType = type.TypeDescriptor as EnumTypeInfo;
-			if (asEnumType != null)
+			if (type.TypeDescriptor is EnumTypeInfo asEnumType)
 			{
 				return asEnumType.EnumName;
 			}
 
-			var asStructType = type.TypeDescriptor as StructTypeInfo;
-			if (asStructType != null)
+			if (type.TypeDescriptor is StructTypeInfo asStructType)
 			{
 				return asStructType.StructName;
 			}
@@ -107,8 +104,7 @@ namespace Hebron.Roslyn
 			}
 
 			var key = type.TypeString;
-			DelegateInfo decl;
-			if (!DelegateMap.TryGetValue(key, out decl))
+			if (!DelegateMap.TryGetValue(key, out var decl))
 			{
 				var name = "delegate" + DelegateMap.Count;
 				decl = new DelegateInfo
@@ -142,8 +138,7 @@ namespace Hebron.Roslyn
 				// stackalloc
 			}
 
-			var asFunctionPointerType = type.TypeDescriptor as FunctionPointerTypeInfo;
-			if (asFunctionPointerType != null)
+			if (type.TypeDescriptor is FunctionPointerTypeInfo asFunctionPointerType)
 			{
 				return typeName;
 			}
@@ -153,7 +148,7 @@ namespace Hebron.Roslyn
 
 			for (var i = 0; i < type.PointerCount; ++i)
 			{
-				sb.Append("*");
+				sb.Append('*');
 			}
 
 			sb.Replace("enum ", "");
@@ -167,7 +162,7 @@ namespace Hebron.Roslyn
 		public string BuildUnsafeArrayTypeName(TypeInfo typeInfo)
 		{
 			var typeName = ToRoslynTypeName(typeInfo);
-			return "UnsafeArray" + typeInfo.ConstantArraySizes.Length + "D<" + typeName + ">";
+			return $"UnsafeArray{typeInfo.ConstantArraySizes.Length}D<{typeName}>";
 		}
 	}
 }

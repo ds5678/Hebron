@@ -5,29 +5,25 @@ namespace Hebron.Rust
 {
 	public class CursorProcessResult
 	{
-		private readonly Cursor _info;
-		private readonly TypeInfo _typeInfo;
-		private readonly string _rustType;
+		public Cursor Info { get; }
 
-		public Cursor Info => _info;
+		public TypeInfo TypeInfo { get; }
 
-		public TypeInfo TypeInfo => _typeInfo;
+		public required string Expression { get; set; }
 
-		public string Expression { get; set; }
+		public bool IsPointer => TypeInfo.IsPointer;
 
-		public bool IsPointer => _typeInfo.IsPointer;
+		public bool IsArray => TypeInfo.IsArray;
 
-		public bool IsArray => _typeInfo.IsArray;
+		public bool IsPrimitiveNumericType => TypeInfo.IsPrimitiveNumericType();
 
-		public bool IsPrimitiveNumericType => _typeInfo.IsPrimitiveNumericType();
-
-		public string RustType => _rustType;
+		public string RustType { get; }
 
 		public CursorProcessResult(RustCodeConverter codeConverter, Cursor cursor)
 		{
-			_info = cursor ?? throw new ArgumentNullException(nameof(cursor));
-			_typeInfo = _info.Handle.Type.ToTypeInfo();
-			_rustType = codeConverter.ToRustString(_typeInfo);
+			Info = cursor ?? throw new ArgumentNullException(nameof(cursor));
+			TypeInfo = Info.Handle.Type.ToTypeInfo();
+			RustType = codeConverter.ToRustString(TypeInfo);
 		}
 	}
 }

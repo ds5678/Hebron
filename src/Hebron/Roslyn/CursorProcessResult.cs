@@ -5,36 +5,28 @@ namespace Hebron.Roslyn
 {
 	public class CursorProcessResult
 	{
-		private readonly Cursor _info;
-		private readonly TypeInfo _typeInfo;
-		private readonly string _csType;
-		private bool _isClass;
+		public Cursor Info { get; }
 
-		public Cursor Info => _info;
+		public TypeInfo TypeInfo { get; }
 
-		public TypeInfo TypeInfo => _typeInfo;
+		public required string Expression { get; set; }
 
-		public string Expression { get; set; }
+		public bool IsPointer => TypeInfo.IsPointer;
 
-		public bool IsPointer => _typeInfo.IsPointer;
+		public bool IsArray => TypeInfo.IsArray;
 
-		public bool IsArray => _typeInfo.IsArray;
+		public string CsType { get; }
 
-		public string CsType => _csType;
-
-		public bool IsClass => _isClass;
+		public bool IsClass { get; }
 
 		public CursorProcessResult(RoslynCodeConverter roslynCodeConverter, Cursor cursor)
 		{
-			if (cursor == null)
-			{
-				throw new ArgumentNullException("info");
-			}
+			ArgumentNullException.ThrowIfNull(cursor);
 
-			_info = cursor;
-			_typeInfo = _info.Handle.Type.ToTypeInfo();
-			_csType = roslynCodeConverter.ToRoslynString(_typeInfo);
-			_isClass = roslynCodeConverter.IsClass(_typeInfo.TypeName);
+			Info = cursor;
+			TypeInfo = Info.Handle.Type.ToTypeInfo();
+			CsType = roslynCodeConverter.ToRoslynString(TypeInfo);
+			IsClass = roslynCodeConverter.IsClass(TypeInfo.TypeName);
 		}
 	}
 }

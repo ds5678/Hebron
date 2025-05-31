@@ -27,10 +27,7 @@ namespace Hebron.Roslyn
 		public static FieldDeclarationSyntax MakeConst(this FieldDeclarationSyntax decl) => decl.AddModifiers(Token(SyntaxKind.ConstKeyword));
 
 
-		private static readonly HashSet<string> _specialWords = new HashSet<string>(new[]
-		{
-			"out", "in", "base", "null", "string", "lock", "object", "class", "event"
-		});
+		private static readonly HashSet<string> _specialWords = ["out", "in", "base", "null", "string", "lock", "object", "class", "event"];
 
 		public static string FixSpecialWords(this string name)
 		{
@@ -72,7 +69,7 @@ namespace Hebron.Roslyn
 			return type.Parentize() + expr.Parentize();
 		}
 
-		internal static string GetExpression(this CursorProcessResult cursorProcessResult)
+		internal static string GetExpression(this CursorProcessResult? cursorProcessResult)
 		{
 			return cursorProcessResult != null ? cursorProcessResult.Expression : string.Empty;
 		}

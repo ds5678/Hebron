@@ -5,21 +5,18 @@ namespace Hebron.Runtime
 {
 	public unsafe class UnsafeArray1D<T> where T : struct
 	{
-		private readonly T[] _data;
-		private readonly GCHandle _pinHandle;
-
-		internal GCHandle PinHandle => _pinHandle;
+		internal GCHandle PinHandle { get; }
 
 		public T this[int index]
 		{
-			get => _data[index];
+			get => Data[index];
 			set
 			{
-				_data[index] = value;
+				Data[index] = value;
 			}
 		}
 
-		public T[] Data => _data;
+		public T[] Data { get; }
 
 		public UnsafeArray1D(int size)
 		{
@@ -28,8 +25,8 @@ namespace Hebron.Runtime
 				throw new ArgumentOutOfRangeException(nameof(size));
 			}
 
-			_data = new T[size];
-			_pinHandle = GCHandle.Alloc(_data, GCHandleType.Pinned);
+			Data = new T[size];
+			PinHandle = GCHandle.Alloc(Data, GCHandleType.Pinned);
 		}
 
 		public UnsafeArray1D(T[] data, int sizeOf)
@@ -39,18 +36,18 @@ namespace Hebron.Runtime
 				throw new ArgumentOutOfRangeException(nameof(sizeOf));
 			}
 
-			_data = data ?? throw new ArgumentNullException(nameof(data));
-			_pinHandle = GCHandle.Alloc(_data, GCHandleType.Pinned);
+			Data = data ?? throw new ArgumentNullException(nameof(data));
+			PinHandle = GCHandle.Alloc(Data, GCHandleType.Pinned);
 		}
 
 		~UnsafeArray1D()
 		{
-			_pinHandle.Free();
+			PinHandle.Free();
 		}
 
 		public void* ToPointer()
 		{
-			return _pinHandle.AddrOfPinnedObject().ToPointer();
+			return PinHandle.AddrOfPinnedObject().ToPointer();
 		}
 
 		public static implicit operator void*(UnsafeArray1D<T> array)

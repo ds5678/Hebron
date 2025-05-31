@@ -5,7 +5,7 @@ namespace Hebron.Runtime
 	public unsafe class UnsafeArray2D<T> where T : struct
 	{
 		private readonly UnsafeArray1D<T>[] _data;
-		private long[] _pinAddresses;
+		private readonly long[] _pinAddresses;
 		private readonly GCHandle _pinAddressesHandle;
 
 		public UnsafeArray1D<T> this[int index]

@@ -9,19 +9,19 @@ namespace Hebron.Rust
 		private void FillTypeDeclaration(Cursor cursor, string name)
 		{
 			var declaration = new IndentedStringWriter();
-			declaration.IndentedWriteLine("#[derive(Debug, Copy, Clone)]");
-			declaration.IndentedWriteLine("pub struct " + name + " {");
-			++declaration.IndentLevel;
+			declaration.WriteLine("#[derive(Debug, Copy, Clone)]");
+			declaration.WriteLine("pub struct " + name + " {");
+			++declaration.Indent;
 
 			var def = new IndentedStringWriter();
-			def.IndentedWriteLine("impl std::default::Default for " + name + " {");
-			++def.IndentLevel;
-			def.IndentedWriteLine("fn default() -> Self {");
-			++def.IndentLevel;
-			def.IndentedWriteLine(name + " {");
-			++def.IndentLevel;
+			def.WriteLine("impl std::default::Default for " + name + " {");
+			++def.Indent;
+			def.WriteLine("fn default() -> Self {");
+			++def.Indent;
+			def.WriteLine(name + " {");
+			++def.Indent;
 
-			foreach (NamedDecl child in cursor.CursorChildren)
+			foreach (var child in cursor.CursorChildren.Cast<NamedDecl>())
 			{
 				if (child is RecordDecl)
 				{
@@ -42,21 +42,21 @@ namespace Hebron.Rust
 				}
 
 				var expr = "pub " + childName + ":" + ToRustString(typeInfo) + ",";
-				declaration.IndentedWriteLine(expr);
+				declaration.WriteLine(expr);
 
 				expr = childName + ": " + typeInfo.GetDefaltValue() + ",";
-				def.IndentedWriteLine(expr);
+				def.WriteLine(expr);
 			}
 
-			--declaration.IndentLevel;
-			declaration.IndentedWriteLine("}");
+			--declaration.Indent;
+			declaration.WriteLine('}');
 
-			--def.IndentLevel;
-			def.IndentedWriteLine("}");
-			--def.IndentLevel;
-			def.IndentedWriteLine("}");
-			--def.IndentLevel;
-			def.IndentedWriteLine("}");
+			--def.Indent;
+			def.WriteLine('}');
+			--def.Indent;
+			def.WriteLine('}');
+			--def.Indent;
+			def.WriteLine('}');
 
 			Result.Structs[name] = declaration.ToString();
 			Result.StructDefaults[name] = def.ToString();
@@ -88,7 +88,7 @@ namespace Hebron.Rust
 					continue;
 				}
 
-				Logger.Info("Generating code for struct {0}", name);
+				Logger.Info($"Generating code for struct {name}");
 
 				FillTypeDeclaration(cursor, name);
 			}

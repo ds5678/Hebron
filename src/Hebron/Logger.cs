@@ -4,32 +4,26 @@ namespace Hebron
 {
 	public static class Logger
 	{
-		public static Action<string> LogFunction = Console.Write;
+		public static Action<string>? LogFunction = Console.Write;
 
 		public static void Log(string data)
 		{
-			if (LogFunction != null)
-			{
-				LogFunction(data);
-			}
+			LogFunction?.Invoke(data);
 		}
 
 		public static void LogLine(string data)
 		{
-			if (LogFunction != null)
-			{
-				LogFunction(data + Environment.NewLine);
-			}
+			LogFunction?.Invoke(data + Environment.NewLine);
 		}
 
-		public static void Warning(string message, params object[] args)
+		public static void Warning(string message)
 		{
-			LogLine(string.Format("Warning: " + message, args));
+			LogLine("Warning: " + message);
 		}
 
-		public static void Info(string message, params object[] args)
+		public static void Info(string message)
 		{
-			LogLine(string.Format("Info: " + message, args));
+			LogLine("Info: " + message);
 		}
 	}
 }

@@ -14,7 +14,7 @@
 
 		public RoslynConversionParameters()
 		{
-			Classes = new string[0];
+			Classes = [];
 		}
 	}
 }

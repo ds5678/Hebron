@@ -186,7 +186,7 @@ namespace Hebron.Runtime
 		{
 			// First step - determine length
 			var length = 0;
-			sbyte* ptr = start;
+			var ptr = start;
 			while (numbers.IndexOf((char)*ptr) != -1)
 			{
 				++ptr;
@@ -199,8 +199,8 @@ namespace Hebron.Runtime
 			ptr = start;
 			while (length > 0)
 			{
-				long num = numbers.IndexOf((char)*ptr);
-				long pow = (long)Math.Pow(10, length - 1);
+				var num = numbers.IndexOf((char)*ptr);
+				var pow = (long)Math.Pow(10, length - 1);
 				result += num * pow;
 
 				++ptr;

@@ -3,6 +3,7 @@ using ClangSharp.Interop;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -29,7 +30,7 @@ namespace Hebron
 
 	public abstract class BaseTypeDescriptor
 	{
-		private string _typeName;
+		private string? _typeName;
 
 		public string TypeName
 		{
@@ -105,7 +106,7 @@ namespace Hebron
 			var sb = new StringBuilder();
 
 			sb.Append(ReturnType.TypeString);
-			sb.Append("(");
+			sb.Append('(');
 
 			if (Arguments != null)
 			{
@@ -120,7 +121,7 @@ namespace Hebron
 				}
 			}
 
-			sb.Append(")");
+			sb.Append(')');
 
 			return sb.ToString();
 		}
@@ -128,7 +129,7 @@ namespace Hebron
 
 	public class TypeInfo
 	{
-		private string _typeString;
+		private string? _typeString;
 
 		public BaseTypeDescriptor TypeDescriptor { get; private set; }
 
@@ -152,12 +153,12 @@ namespace Hebron
 
 					if (PointerCount > 0)
 					{
-						sb.Append(" ");
+						sb.Append(' ');
 					}
 
 					for (var i = 0; i < PointerCount; ++i)
 					{
-						sb.Append("*");
+						sb.Append('*');
 					}
 
 					_typeString = sb.ToString();
@@ -169,10 +170,7 @@ namespace Hebron
 
 		public TypeInfo(BaseTypeDescriptor typeDescriptor, int pointerCount, int[] constantArraySizes)
 		{
-			if (pointerCount < 0)
-			{
-				throw new ArgumentOutOfRangeException(nameof(pointerCount));
-			}
+			ArgumentOutOfRangeException.ThrowIfNegative(pointerCount);
 
 			TypeDescriptor = typeDescriptor ?? throw new ArgumentNullException(nameof(typeDescriptor));
 			ConstantArraySizes = constantArraySizes;
@@ -182,19 +180,16 @@ namespace Hebron
 		public override string ToString() => TypeString;
 	}
 
-	internal static class Utility
+	internal static partial class Utility
 	{
-		public static unsafe TranslationUnit Compile(string inputPath, string[] defines, string[] additionalIncludeFolders)
+		public static unsafe TranslationUnit Compile(string inputPath, string[]? defines, string[] additionalIncludeFolders)
 		{
 			if (string.IsNullOrEmpty(inputPath))
 			{
 				throw new ArgumentNullException(nameof(inputPath));
 			}
 
-			if (defines == null)
-			{
-				defines = new string[0];
-			}
+			defines ??= [];
 
 			var arr = new List<string>();
 
@@ -211,13 +206,12 @@ namespace Hebron
 
 			var index = Index.Create();
 
-			CXTranslationUnit cxTranslationUnit;
 			var res = CXTranslationUnit.TryParse(index.Handle,
 				inputPath,
 				arr.ToArray(),
-				new CXUnsavedFile[0],
+				[],
 				CXTranslationUnit_Flags.CXTranslationUnit_None,
-				out cxTranslationUnit);
+				out var cxTranslationUnit);
 
 			var numDiagnostics = clang.getNumDiagnostics(cxTranslationUnit);
 			for (uint i = 0; i < numDiagnostics; ++i)
@@ -273,21 +267,15 @@ namespace Hebron
 
 		public static string GetLiteralString(this CXCursor cursor)
 		{
-			switch (cursor.Kind)
+			return cursor.Kind switch
 			{
-				case CXCursorKind.CXCursor_IntegerLiteral:
-					return cursor.GetTokenLiteral();
-				case CXCursorKind.CXCursor_FloatingLiteral:
-					return cursor.GetTokenLiteral();
-				case CXCursorKind.CXCursor_CharacterLiteral:
-					return clangsharp.Cursor_getCharacterLiteralValue(cursor).ToString();
-				case CXCursorKind.CXCursor_StringLiteral:
-					return clangsharp.Cursor_getStringLiteralValue(cursor).ToString();
-				case CXCursorKind.CXCursor_CXXBoolLiteralExpr:
-					return clangsharp.Cursor_getBoolLiteralValue(cursor).ToString();
-			}
-
-			return string.Empty;
+				CXCursorKind.CXCursor_IntegerLiteral => cursor.GetTokenLiteral(),
+				CXCursorKind.CXCursor_FloatingLiteral => cursor.GetTokenLiteral(),
+				CXCursorKind.CXCursor_CharacterLiteral => clangsharp.Cursor_getCharacterLiteralValue(cursor).ToString(),
+				CXCursorKind.CXCursor_StringLiteral => clangsharp.Cursor_getStringLiteralValue(cursor).ToString(),
+				CXCursorKind.CXCursor_CXXBoolLiteralExpr => clangsharp.Cursor_getBoolLiteralValue(cursor).ToString(),
+				_ => string.Empty,
+			};
 		}
 
 		public static string GetLiteralString(this Cursor cursor) => GetLiteralString(cursor.Handle);
@@ -312,46 +300,29 @@ namespace Hebron
 
 		private static PrimitiveType? ToPrimitiveType(this CXTypeKind kind)
 		{
-			switch (kind)
+			return kind switch
 			{
-				case CXTypeKind.CXType_Bool:
-					return PrimitiveType.Boolean;
-				case CXTypeKind.CXType_UChar:
-				case CXTypeKind.CXType_Char_U:
-					return PrimitiveType.Byte;
-				case CXTypeKind.CXType_SChar:
-				case CXTypeKind.CXType_Char_S:
-					return PrimitiveType.Sbyte;
-				case CXTypeKind.CXType_UShort:
-					return PrimitiveType.UShort;
-				case CXTypeKind.CXType_Short:
-					return PrimitiveType.Short;
-				case CXTypeKind.CXType_Float:
-					return PrimitiveType.Float;
-				case CXTypeKind.CXType_Double:
-					return PrimitiveType.Double;
-				case CXTypeKind.CXType_Long:
-				case CXTypeKind.CXType_Int:
-					return PrimitiveType.Int;
-				case CXTypeKind.CXType_ULong:
-				case CXTypeKind.CXType_UInt:
-					return PrimitiveType.Uint;
-				case CXTypeKind.CXType_LongLong:
-					return PrimitiveType.Long;
-				case CXTypeKind.CXType_ULongLong:
-					return PrimitiveType.ULong;
-				case CXTypeKind.CXType_Void:
-					return PrimitiveType.Void;
-			}
-
-			return null;
+				CXTypeKind.CXType_Bool => PrimitiveType.Boolean,
+				CXTypeKind.CXType_UChar or CXTypeKind.CXType_Char_U => PrimitiveType.Byte,
+				CXTypeKind.CXType_SChar or CXTypeKind.CXType_Char_S => PrimitiveType.Sbyte,
+				CXTypeKind.CXType_UShort => PrimitiveType.UShort,
+				CXTypeKind.CXType_Short => PrimitiveType.Short,
+				CXTypeKind.CXType_Float => PrimitiveType.Float,
+				CXTypeKind.CXType_Double => PrimitiveType.Double,
+				CXTypeKind.CXType_Long or CXTypeKind.CXType_Int => PrimitiveType.Int,
+				CXTypeKind.CXType_ULong or CXTypeKind.CXType_UInt => PrimitiveType.Uint,
+				CXTypeKind.CXType_LongLong => PrimitiveType.Long,
+				CXTypeKind.CXType_ULongLong => PrimitiveType.ULong,
+				CXTypeKind.CXType_Void => PrimitiveType.Void,
+				_ => null,
+			};
 		}
 
 		public static TypeInfo ToTypeInfo(this CXType type)
 		{
 			var run = true;
-			int typeEnum = 0;
-			int pointerCount = 0;
+			var typeEnum = 0;
+			var pointerCount = 0;
 			var constantArraySizes = new List<int>();
 
 			while (run)
@@ -399,13 +370,10 @@ namespace Hebron
 				}
 			}
 
-			TypeInfo result = null;
-
 			switch (typeEnum)
 			{
 				case 0:
-					result = new TypeInfo(new PrimitiveTypeInfo(type.kind.ToPrimitiveType().Value), pointerCount, constantArraySizes.ToArray());
-					break;
+					return new TypeInfo(new PrimitiveTypeInfo(type.kind.ToPrimitiveType()!.Value), pointerCount, [.. constantArraySizes]);
 				case 1:
 					{
 						var name = clang.getTypeSpelling(type).ToString();
@@ -417,9 +385,8 @@ namespace Hebron
 
 						name = name.Replace("struct ", string.Empty);
 						name = name.Replace("enum ", string.Empty);
-						result = new TypeInfo(new StructTypeInfo(name), pointerCount, constantArraySizes.ToArray());
+						return new TypeInfo(new StructTypeInfo(name), pointerCount, [.. constantArraySizes]);
 					}
-					break;
 				case 2:
 					var args = new List<TypeInfo>();
 					for (var i = 0; i < type.NumArgTypes; ++i)
@@ -428,8 +395,7 @@ namespace Hebron
 						args.Add(arg.ToTypeInfo());
 					}
 
-					result = new TypeInfo(new FunctionPointerTypeInfo(type.ResultType.ToTypeInfo(), args.ToArray()), pointerCount, constantArraySizes.ToArray());
-					break;
+					return new TypeInfo(new FunctionPointerTypeInfo(type.ResultType.ToTypeInfo(), [.. args]), pointerCount, [.. constantArraySizes]);
 				case 3:
 					{
 						var name = clang.getTypeSpelling(type).ToString();
@@ -440,12 +406,11 @@ namespace Hebron
 						}
 
 						name = name.Replace("enum ", string.Empty);
-						result = new TypeInfo(new EnumTypeInfo(name), pointerCount, constantArraySizes.ToArray());
+						return new TypeInfo(new EnumTypeInfo(name), pointerCount, [.. constantArraySizes]);
 					}
-					break;
+				default:
+					throw new Exception("Unreachable");
 			}
-
-			return result;
 		}
 
 		public static TypeInfo ToTypeInfo(this Type type) => type.Handle.ToTypeInfo();
@@ -509,8 +474,7 @@ namespace Hebron
 
 		public static bool IsPrimitiveNumericType(this TypeInfo typeInfo)
 		{
-			var asPrimitive = typeInfo.TypeDescriptor as PrimitiveTypeInfo;
-			return asPrimitive != null && asPrimitive.PrimitiveType != PrimitiveType.Void;
+			return typeInfo.TypeDescriptor is PrimitiveTypeInfo asPrimitive && asPrimitive.PrimitiveType != PrimitiveType.Void;
 		}
 
 		public static string GetTokenLiteral(this CXCursor cursor)
@@ -532,34 +496,34 @@ namespace Hebron
 			uint numTokens;
 			clang.tokenize(cursor.TranslationUnit, range, &nativeTokens, &numTokens);
 
-			var result = new List<string>();
+			var result = new string[numTokens];
 			for (uint i = 0; i < numTokens; ++i)
 			{
-				var name = clang.getTokenSpelling(cursor.TranslationUnit, nativeTokens[i]).ToString();
-				result.Add(name);
+				result[i] = clang.getTokenSpelling(cursor.TranslationUnit, nativeTokens[i]).ToString();
 			}
 
-			return result.ToArray();
+			return result;
 		}
 
 		public static string[] Tokenize(this Cursor cursor) => cursor.Handle.Tokenize();
 
-		public static string UppercaseFirstLetter(this string s)
+		[return: NotNullIfNotNull(nameof(s))]
+		public static string? UppercaseFirstLetter(this string? s)
 		{
 			if (string.IsNullOrEmpty(s) || char.IsUpper(s[0]))
 			{
 				return s;
 			}
 
-			return char.ToUpper(s[0]) + s.Substring(1);
+			return char.ToUpper(s[0]) + s[1..];
 		}
 
 		public static string Depoint(this string s)
 		{
 			s = s.Trim();
-			if (s.EndsWith("*"))
+			if (s.EndsWith('*'))
 			{
-				s = s.Substring(0, s.Length - 1);
+				s = s[..^1];
 			}
 
 			return s;
@@ -571,13 +535,13 @@ namespace Hebron
 			var arrayCount = s.Count(c => c == '*') - 1;
 
 			sb.Append(s.Replace("*", string.Empty));
-			sb.Append("[");
+			sb.Append('[');
 
 			if (arrayCount > 0)
 			{
 				sb.Append(new string(',', arrayCount));
 			}
-			sb.Append("]");
+			sb.Append(']');
 
 			return sb.ToString();
 		}
@@ -592,8 +556,7 @@ namespace Hebron
 				return false;
 			}
 
-			var asPrimitiveType = typeInfo.TypeDescriptor as PrimitiveTypeInfo;
-			if (asPrimitiveType == null)
+			if (typeInfo.TypeDescriptor is not PrimitiveTypeInfo asPrimitiveType)
 			{
 				return false;
 			}
@@ -601,7 +564,7 @@ namespace Hebron
 			return asPrimitiveType.PrimitiveType == PrimitiveType.Void;
 		}
 
-		public static bool CorrectlyParentized(this string expr)
+		public static bool CorrectlyParentized(this string? expr)
 		{
 			if (string.IsNullOrEmpty(expr))
 			{
@@ -609,7 +572,7 @@ namespace Hebron
 			}
 
 			expr = expr.Trim();
-			if (expr.StartsWith("(") && expr.EndsWith(")"))
+			if (expr.StartsWith('(') && expr.EndsWith(')'))
 			{
 				var pcount = 1;
 				for (var i = 1; i < expr.Length - 1; ++i)
@@ -658,26 +621,32 @@ namespace Hebron
 			}
 
 			// Remove white space
-			expr = Regex.Replace(expr, @"\s+", "");
+			expr = DeparentizeRegex().Replace(expr, "");
 
 			while (expr.CorrectlyParentized())
 			{
-				expr = expr.Substring(1, expr.Length - 2);
+				expr = expr[1..^1];
 			}
 
 			return expr;
 		}
 
-		public static string EnsureStatementFinished(this string statement)
+		[return: NotNullIfNotNull(nameof(statement))]
+		public static string? EnsureStatementFinished(this string? statement)
 		{
+			if (string.IsNullOrEmpty(statement))
+			{
+				return statement;
+			}
+
 			var trimmed = statement.Trim();
 
-			if (string.IsNullOrEmpty(trimmed))
+			if (trimmed.Length == 0)
 			{
 				return trimmed;
 			}
 
-			if (!trimmed.EndsWith(";") && !trimmed.EndsWith("}"))
+			if (!trimmed.EndsWith(';') && !trimmed.EndsWith('}'))
 			{
 				return statement + ";";
 			}
@@ -689,7 +658,7 @@ namespace Hebron
 		{
 			var trimmed = statement.Trim();
 
-			if (!trimmed.EndsWith(";"))
+			if (!trimmed.EndsWith(';'))
 			{
 				return statement + ";";
 			}
@@ -701,7 +670,7 @@ namespace Hebron
 		{
 			expr = expr.Trim();
 
-			if (expr.StartsWith("{") && expr.EndsWith("}"))
+			if (expr.StartsWith('{') && expr.EndsWith('}'))
 			{
 				return expr;
 			}
@@ -713,16 +682,16 @@ namespace Hebron
 		{
 			expr = expr.Trim();
 
-			if (expr.StartsWith("{") && expr.EndsWith("}"))
+			if (expr.StartsWith('{') && expr.EndsWith('}'))
 			{
-				return expr.Substring(1, expr.Length - 2).Trim();
+				return expr[1..^1].Trim();
 			}
 
 			return expr;
 		}
 
-		private static readonly HashSet<string> NativeFunctions = new HashSet<string>
-		{
+		private static readonly HashSet<string> NativeFunctions =
+		[
 			"malloc",
 			"free",
 			"abs",
@@ -745,11 +714,11 @@ namespace Hebron
 			"floor",
 			"ceil",
 			"memmove",
-		};
+		];
 
 		public static bool IsNativeFunctionName(this string name) => NativeFunctions.Contains(name);
 
-		public static bool IsCaseStatement(Cursor parent0, Cursor parent1)
+		public static bool IsCaseStatement(Cursor? parent0, Cursor? parent1)
 		{
 			if (parent0 == null)
 			{
@@ -778,5 +747,8 @@ namespace Hebron
 
 			return false;
 		}
+
+		[GeneratedRegex(@"\s+")]
+		private static partial Regex DeparentizeRegex();
 	}
 }

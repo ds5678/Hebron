@@ -11,8 +11,7 @@ namespace Hebron.Roslyn
 	{
 		private Stack<string> GetVariableInfos(string name)
 		{
-			Stack<string> infos;
-			if (!_variables.TryGetValue(name, out infos))
+			if (!_variables.TryGetValue(name, out var infos))
 			{
 				infos = new Stack<string>();
 				_variables[name] = infos;
@@ -50,7 +49,7 @@ namespace Hebron.Roslyn
 				}
 
 				var name = cursor.Spelling.FixSpecialWords();
-				Logger.Info("Processing global variable {0}", name);
+				Logger.Info($"Processing global variable {name}");
 
 				if (Parameters.SkipGlobalVariables.Contains(name))
 				{
@@ -86,7 +85,7 @@ namespace Hebron.Roslyn
 						}
 						
 						var expr = ("public static " + part).EnsureStatementEndWithSemicolon();
-						var stmt = (FieldDeclarationSyntax)ParseMemberDeclaration(expr);
+						var stmt = (FieldDeclarationSyntax?)ParseMemberDeclaration(expr);
 						Result.GlobalVariables[varName] = stmt;
 					}
 				}

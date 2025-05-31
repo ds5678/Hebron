@@ -20,9 +20,7 @@ namespace Hebron
 
 		private static void DumpCursor(IndentedStringWriter writer, Cursor cursor)
 		{
-			var line = string.Format("// {0}- {1} - {2}", cursor.CursorKindSpelling,
-				cursor.Spelling,
-				clang.getTypeSpelling(clang.getCursorType(cursor.Handle)));
+			var line = $"// {cursor.CursorKindSpelling}- {cursor.Spelling} - {clang.getTypeSpelling(clang.getCursorType(cursor.Handle))}";
 
 			var addition = string.Empty;
 
@@ -31,14 +29,12 @@ namespace Hebron
 				case CXCursorKind.CXCursor_UnaryExpr:
 				case CXCursorKind.CXCursor_UnaryOperator:
 					{
-						addition = string.Format("Unary Operator: {0} ({1})",
-							cursor.Handle.UnaryOperatorKind, cursor.Handle.UnaryOperatorKindSpelling);
+						addition = $"Unary Operator: {cursor.Handle.UnaryOperatorKind} ({cursor.Handle.UnaryOperatorKindSpelling})";
 					}
 					break;
 				case CXCursorKind.CXCursor_BinaryOperator:
 					{
-						addition = string.Format("Binary Operator: {0} ({1})",
-							cursor.Handle.BinaryOperatorKind, cursor.Handle.BinaryOperatorKindSpelling);
+						addition = $"Binary Operator: {cursor.Handle.BinaryOperatorKind} ({cursor.Handle.BinaryOperatorKindSpelling})";
 					}
 					break;
 				case CXCursorKind.CXCursor_IntegerLiteral:
@@ -46,7 +42,7 @@ namespace Hebron
 				case CXCursorKind.CXCursor_CharacterLiteral:
 				case CXCursorKind.CXCursor_StringLiteral:
 				case CXCursorKind.CXCursor_CXXBoolLiteralExpr:
-					addition = string.Format("Literal: {0}", cursor.Handle.GetLiteralString());
+					addition = $"Literal: {cursor.Handle.GetLiteralString()}";
 					break;
 			}
 
@@ -55,14 +51,14 @@ namespace Hebron
 				line += " [" + addition + "]";
 			}
 
-			writer.IndentedWriteLine(line);
+			writer.WriteLine(line);
 
-			writer.IndentLevel++;
+			writer.Indent++;
 			foreach(var child in cursor.CursorChildren)
 			{
 				DumpCursor(writer, child);
 			}
-			writer.IndentLevel--;
+			writer.Indent--;
 		}
 	}
 }

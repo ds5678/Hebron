@@ -10,7 +10,7 @@ namespace Hebron.Roslyn
 {
 	partial class RoslynCodeConverter
 	{
-		private readonly List<string> TopTypes = new List<string>();
+		private readonly List<string> TopTypes = [];
 		private int _unnamedCounter;
 
 		private bool CheckIsClass(string name, 
@@ -24,8 +24,7 @@ namespace Hebron.Roslyn
 				return true;
 			}
 
-			List<string> dependencyNames;
-			if (dependencyTree.TryGetValue(name, out dependencyNames))
+			if (dependencyTree.TryGetValue(name, out var dependencyNames))
 			{
 				foreach (var dependencyName in dependencyNames)
 				{
@@ -49,7 +48,7 @@ namespace Hebron.Roslyn
 			typeDecl = typeDecl.MakePublic().MakeUnsafe();
 
 			var constructorStatements = new List<StatementSyntax>();
-			foreach (NamedDecl child in cursor.CursorChildren)
+			foreach (var child in cursor.CursorChildren.Cast<NamedDecl>())
 			{
 				if (child is RecordDecl)
 				{
@@ -93,7 +92,7 @@ namespace Hebron.Roslyn
 					sb.Append(" {}");
 
 
-					var subTypeDecl = (TypeDeclarationSyntax)ParseMemberDeclaration(sb.ToString());
+					var subTypeDecl = (TypeDeclarationSyntax?)ParseMemberDeclaration(sb.ToString());
 
 					subTypeDecl = FillTypeDeclaration(child.CursorChildren[0], subName, subTypeDecl, subIsUnion);
 					typeDecl = typeDecl.AddMembers(subTypeDecl);
@@ -103,7 +102,7 @@ namespace Hebron.Roslyn
 
 				var typeName = ToRoslynTypeName(typeInfo);
 
-				string fieldDecl = null;
+				string? fieldDecl = null;
 
 				var isFixedField = !IsClass(name) && 
 					typeInfo.TypeDescriptor is PrimitiveTypeInfo &&
@@ -125,7 +124,7 @@ namespace Hebron.Roslyn
 						var dimensions = typeInfo.ConstantArraySizes.BuildArrayDimensionsString();
 						var expr = "public " + arrayTypeName + " " + childName +
 							"Array = new " + arrayTypeName + "(" + dimensions + ");";
-						var arrayFieldDecl = (FieldDeclarationSyntax)ParseMemberDeclaration(expr);
+						var arrayFieldDecl = (FieldDeclarationSyntax?)ParseMemberDeclaration(expr);
 
 						var stmt = ParseStatement(childName + " = " + ToRoslynString(typeInfo).Parentize() + childName + "Array;");
 						constructorStatements.Add(stmt);
@@ -154,7 +153,7 @@ namespace Hebron.Roslyn
 					fieldDecl = "[FieldOffset(0)]" + fieldDecl;
 				}
 
-				var fieldDecl2 = (FieldDeclarationSyntax)ParseMemberDeclaration(fieldDecl.EnsureStatementFinished());
+				var fieldDecl2 = (FieldDeclarationSyntax?)ParseMemberDeclaration(fieldDecl.EnsureStatementFinished());
 				typeDecl = typeDecl.AddMembers(fieldDecl2);
 			}
 
@@ -204,36 +203,33 @@ namespace Hebron.Roslyn
 
 					var asField = (FieldDecl)child;
 					var typeInfo = asField.Type.ToTypeInfo();
-					var asStruct = typeInfo.TypeDescriptor as StructTypeInfo;
-					if (asStruct != null)
+					if (typeInfo.TypeDescriptor is StructTypeInfo asStruct)
 					{
-						List<string> names;
-						if (!dependencyTree.TryGetValue(name, out names))
+						if (!dependencyTree.TryGetValue(name, out var names))
 						{
-							names = new List<string>();
+							names = [];
 							dependencyTree[name] = names;
 						}
 
 						names.Add(asStruct.StructName);
 						if (typeInfo.IsArray)
 						{
-							Logger.Info("Marking struct {0} as class since it contains array of type {1}", name, asStruct.StructName);
+							Logger.Info($"Marking struct {name} as class since it contains array of type {asStruct.StructName}");
 							Classes.Add(name);
 							break;
 						}
 					}
 
-					var asFunctionPointer = typeInfo.TypeDescriptor as FunctionPointerTypeInfo;
-					if (asFunctionPointer != null)
+					if (typeInfo.TypeDescriptor is FunctionPointerTypeInfo asFunctionPointer)
 					{
-						Logger.Info("Marking struct {0} as class since it contains function pointers", name);
+						Logger.Info($"Marking struct {name} as class since it contains function pointers");
 						Classes.Add(name);
 						break;
 					}
 
 					if (typeInfo.IsArray && typeInfo.ConstantArraySizes.Length > 1)
 					{
-						Logger.Info("Marking struct {0} as class since it contains multidimensional arrays", name);
+						Logger.Info($"Marking struct {name} as class since it contains multidimensional arrays");
 						Classes.Add(name);
 						break;
 					}
@@ -252,9 +248,9 @@ namespace Hebron.Roslyn
 
 				var recordDecl = (RecordDecl)cursor;
 				var name = recordDecl.GetName().FixSpecialWords();
-				if (!IsClass(name) && CheckIsClass(name, dependencyTree, new HashSet<string>()))
+				if (!IsClass(name) && CheckIsClass(name, dependencyTree, []))
 				{
-					Logger.Info("Marking struct {0} as class since it references other class", name);
+					Logger.Info($"Marking struct {name} as class since it references other class");
 					Classes.Add(name);
 				}
 			}
@@ -276,7 +272,7 @@ namespace Hebron.Roslyn
 					continue;
 				}
 
-				Logger.Info("Generating code for struct {0}", name);
+				Logger.Info($"Generating code for struct {name}");
 
 				TypeDeclarationSyntax typeDecl;
 				if (IsClass(name))

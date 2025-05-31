@@ -5,11 +5,11 @@ namespace Hebron.Roslyn
 {
 	public class RoslynConversionResult
 	{
-		public readonly Dictionary<string, EnumDeclarationSyntax> NamedEnums = new Dictionary<string, EnumDeclarationSyntax>();
-		public readonly Dictionary<string, FieldDeclarationSyntax> UnnamedEnumValues = new Dictionary<string, FieldDeclarationSyntax>();
-		public readonly Dictionary<string, DelegateDeclarationSyntax> Delegates = new Dictionary<string, DelegateDeclarationSyntax>();
-		public readonly Dictionary<string, FieldDeclarationSyntax> GlobalVariables = new Dictionary<string, FieldDeclarationSyntax>();
-		public readonly Dictionary<string, TypeDeclarationSyntax> Structs = new Dictionary<string, TypeDeclarationSyntax>();
-		public readonly Dictionary<string, MethodDeclarationSyntax> Functions = new Dictionary<string, MethodDeclarationSyntax>();
+		public readonly Dictionary<string, EnumDeclarationSyntax> NamedEnums = [];
+		public readonly Dictionary<string, FieldDeclarationSyntax> UnnamedEnumValues = [];
+		public readonly Dictionary<string, DelegateDeclarationSyntax> Delegates = [];
+		public readonly Dictionary<string, FieldDeclarationSyntax> GlobalVariables = [];
+		public readonly Dictionary<string, TypeDeclarationSyntax> Structs = [];
+		public readonly Dictionary<string, MethodDeclarationSyntax> Functions = [];
 	}
 }
